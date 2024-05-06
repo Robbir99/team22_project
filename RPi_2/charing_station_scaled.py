@@ -136,38 +136,29 @@ class Charging_station():
         self.sense_hat.set_pixel(self.id_number - 1, 0, colors[self.status])
 
 
-class Station_Manager():
-    #lalala
-    
+class Station_Manager():    
     def __init__(self, sense_hat):
-        #Starter med å lage en mqtt client:
-        self.client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
-        #Callback methods:
-        self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message
-        #Connect to the broker
-        self.client.connect("localhost", 1883)
-        #Subscribe to the topics needed
-        #Dette vil her være: "station/connection"
-        self.client.subscribe("station/connection")
-        self.client.subscribe("phone/connected")
-        #Start the internal loop to process MQTT messages
-        self.client.loop_start()
-        self.stations = {}
-        self.sense_hat = sense_hat
+        def __init__(self, sense_hat, broker_ip='192.168.3.45', port=1883):
+            self.client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
+            self.client.on_connect = self.on_connect
+            self.client.on_message = self.on_message
 
-        #Starter så stmpy driveren:
-        self.stm_driver = stmpy.Driver()
-        self.stm_driver.start(keep_active=True)
+            # Connect to the broker using the provided IP address
+            self.client.connect(broker_ip, port)
+            self.client.loop_start()
+            self.sense_hat = sense_hat
+            self.stations = {}
 
-        #Kan hende jeg må starte stm-en et sted og (:
-        #For å scale den må jeg starte 8 stykker
+            #Starter så stmpy driveren:
+            self.stm_driver = stmpy.Driver()
+            self.stm_driver.start(keep_active=True)
+
+            
         for row in range(8):
-            self.name_id = "station_" + str(row)
-            print(self.name_id)
-            self.stations[row] = self.name_id
-            self.stations[self.name_id] = None
-            new_stm = Charging_station(self.name_id ,row ,self.client, self.sense_hat)
+            name_id = f"station_{row}"
+            self.stations[row] = name_id
+            self.stations[name_id] = None
+            new_stm = Charging_station(name_id, row, self.client, self.sense_hat)
             self.stm_driver.add_machine(new_stm.stm)
             self.stm_driver.start()
 
